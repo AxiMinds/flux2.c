@@ -90,8 +90,8 @@ static void cli_finish_progress(void) {
 }
 
 /* Default values */
-#define DEFAULT_WIDTH 1024
-#define DEFAULT_HEIGHT 1024
+#define DEFAULT_WIDTH 256
+#define DEFAULT_HEIGHT 256
 #define DEFAULT_STEPS 4
 #define DEFAULT_GUIDANCE 1.0f
 #define DEFAULT_STRENGTH 0.75f
