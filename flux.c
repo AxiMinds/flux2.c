@@ -478,8 +478,6 @@ float *flux_encode_text(flux_ctx *ctx, const char *prompt, int *out_seq_len) {
  * Image Generation
  * ======================================================================== */
 
-/* Progress callback with timing */
-static void (*g_progress_callback)(int, int) = NULL;
 static struct timespec g_start_time;
 
 static void default_progress(int step, int total) {

@@ -279,7 +279,6 @@ float *flux_vae_encode(flux_vae_t *vae, const float *img,
 
     /* Down blocks */
     for (int level = 0; level < 4; level++) {
-        int ch_in = vae->base_channels * (level == 0 ? 1 : ch_mult[level - 1]);
         int ch_out = vae->base_channels * ch_mult[level];
 
         for (int r = 0; r < vae->num_res_blocks; r++) {

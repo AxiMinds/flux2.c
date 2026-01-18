@@ -68,26 +68,6 @@ static void print_version(void) {
     fprintf(stderr, "Pure C implementation, no external dependencies\n");
 }
 
-/* Progress callback for verbose mode */
-static void progress_callback(int step, int total) {
-    int bar_width = 30;
-    float progress = (float)step / total;
-    int filled = (int)(progress * bar_width);
-
-    fprintf(stderr, "\r[");
-    for (int i = 0; i < bar_width; i++) {
-        if (i < filled) fprintf(stderr, "=");
-        else if (i == filled) fprintf(stderr, ">");
-        else fprintf(stderr, " ");
-    }
-    fprintf(stderr, "] %3d%% (%d/%d)", (int)(progress * 100), step, total);
-
-    if (step == total) {
-        fprintf(stderr, "\n");
-    }
-    fflush(stderr);
-}
-
 int main(int argc, char *argv[]) {
     /* Command line options */
     static struct option long_options[] = {

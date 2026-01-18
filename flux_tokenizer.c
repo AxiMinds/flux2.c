@@ -110,7 +110,8 @@ static int utf8_char_len(unsigned char c) {
     return 1;  /* Invalid, treat as 1 */
 }
 
-/* Decode UTF-8 character to codepoint */
+/* Decode UTF-8 character to codepoint - reserved for QWEN3 text encoder */
+__attribute__((unused))
 static int utf8_decode(const char *s, int *len) {
     unsigned char c = (unsigned char)s[0];
     if ((c & 0x80) == 0) {

@@ -413,7 +413,7 @@ static flux_image *load_png(FILE *f) {
     const uint8_t expected[8] = {0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a};
     if (memcmp(sig, expected, 8) != 0) return NULL;
 
-    int width = 0, height = 0, bit_depth = 0, color_type = 0;
+    int width = 0, height = 0, color_type = 0;
     uint8_t *idat_data = NULL;
     size_t idat_len = 0;
 
@@ -426,7 +426,7 @@ static flux_image *load_png(FILE *f) {
         if (strcmp(chunk_type, "IHDR") == 0) {
             width = read_be32(f);
             height = read_be32(f);
-            bit_depth = fgetc(f);
+            (void)fgetc(f);  /* bit_depth - skip */
             color_type = fgetc(f);
             fseek(f, 3, SEEK_CUR);  /* Skip compression, filter, interlace */
             fseek(f, 4, SEEK_CUR);  /* Skip CRC */

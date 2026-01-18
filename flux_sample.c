@@ -151,6 +151,7 @@ float *flux_sample_euler(void *transformer, void *text_encoder,
                          const float *schedule, int num_steps,
                          float guidance_scale,
                          void (*progress_callback)(int step, int total)) {
+    (void)text_encoder;  /* Reserved for future use */
     flux_transformer_t *tf = (flux_transformer_t *)transformer;
     int latent_size = batch * channels * h * w;
 
@@ -208,6 +209,7 @@ float *flux_sample_euler_ancestral(void *transformer,
                                    const float *schedule, int num_steps,
                                    float guidance_scale, float eta,
                                    void (*progress_callback)(int step, int total)) {
+    (void)guidance_scale;  /* Reserved for CFG support */
     flux_transformer_t *tf = (flux_transformer_t *)transformer;
     int latent_size = batch * channels * h * w;
 
@@ -261,6 +263,7 @@ float *flux_sample_heun(void *transformer,
                         const float *schedule, int num_steps,
                         float guidance_scale,
                         void (*progress_callback)(int step, int total)) {
+    (void)guidance_scale;  /* Reserved for CFG support */
     flux_transformer_t *tf = (flux_transformer_t *)transformer;
     int latent_size = batch * channels * h * w;
 

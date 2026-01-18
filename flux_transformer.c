@@ -235,7 +235,7 @@ static void compute_rope_2d(float *cos_out, float *sin_out,
  */
 static void apply_rope_2d(float *x, const float *cos_freq, const float *sin_freq,
                           int seq, int heads, int head_dim, int axis_dim) {
-    /* head_dim = 128 = 4 * axis_dim (axis_dim = 32) */
+    (void)axis_dim;  /* head_dim = 128 = 4 * axis_dim (axis_dim = 32) */
     for (int s = 0; s < seq; s++) {
         const float *cos_s = cos_freq + s * head_dim;  /* [128] */
         const float *sin_s = sin_freq + s * head_dim;
@@ -296,28 +296,6 @@ static void compute_rope_text(float *cos_out, float *sin_out,
     free(base_freqs);
 }
 
-/* Legacy apply_rope for backward compatibility (not used) */
-static void apply_rope(float *x, const float *freqs, int seq, int heads, int head_dim) {
-    int half_dim = head_dim / 2;
-
-    for (int s = 0; s < seq; s++) {
-        for (int h = 0; h < heads; h++) {
-            float *vec = x + (s * heads + h) * head_dim;
-
-            for (int d = 0; d < half_dim; d++) {
-                float cos_val = freqs[s * half_dim * 2 + d * 2];
-                float sin_val = freqs[s * half_dim * 2 + d * 2 + 1];
-
-                float x0 = vec[d];
-                float x1 = vec[d + half_dim];
-
-                vec[d] = x0 * cos_val - x1 * sin_val;
-                vec[d + half_dim] = x0 * sin_val + x1 * cos_val;
-            }
-        }
-    }
-}
-
 /* ========================================================================
  * Timestep Embedding
  * ======================================================================== */
@@ -363,28 +341,6 @@ static void time_embed_forward(float *out, const float *t_sincos,
 /* ========================================================================
  * AdaLN-Zero Modulation
  * ======================================================================== */
-
-/* Compute AdaLN modulation parameters from timestep embedding */
-static void compute_adaln_params(float *shift, float *scale, float *gate,
-                                 const float *t_emb, const float *weight,
-                                 int hidden, int num_params) {
-    /* weight: [hidden * num_params, hidden] */
-    /* Output: num_params sets of (shift, scale) or (shift, scale, gate) */
-
-    float *params = (float *)malloc(hidden * num_params * sizeof(float));
-    flux_linear_nobias(params, t_emb, weight, 1, hidden, hidden * num_params);
-
-    /* Split into shift, scale, gate */
-    for (int i = 0; i < hidden; i++) {
-        shift[i] = params[i];
-        scale[i] = params[hidden + i];
-        if (num_params >= 3) {
-            gate[i] = params[hidden * 2 + i];
-        }
-    }
-
-    free(params);
-}
 
 /* Apply AdaLN: out = (1 + scale) * LayerNorm(x) + shift
  * This is the standard DiT/FLUX formulation where scale is centered at 0
@@ -1130,7 +1086,6 @@ float *flux_transformer_forward(flux_transformer_t *tf,
                                 float timestep) {
     int hidden = tf->hidden_size;
     int img_seq = img_h * img_w;
-    int heads = tf->num_heads;
     int head_dim = tf->head_dim;
     int axis_dim = 32;  /* FLUX uses axes_dims_rope: [32, 32, 32, 32] */
 
@@ -1519,29 +1474,6 @@ static float *get_sf_tensor_tf(safetensors_file_t *sf, const char *name) {
         return NULL;
     }
     return safetensors_get_f32(sf, t);
-}
-
-static float *concat_qkv(safetensors_file_t *sf,
-                         const char *q_name, const char *k_name, const char *v_name,
-                         int hidden) {
-    float *q = get_sf_tensor_tf(sf, q_name);
-    float *k = get_sf_tensor_tf(sf, k_name);
-    float *v = get_sf_tensor_tf(sf, v_name);
-
-    if (!q || !k || !v) {
-        free(q); free(k); free(v);
-        return NULL;
-    }
-
-    float *qkv = malloc(hidden * 3 * hidden * sizeof(float));
-    if (qkv) {
-        memcpy(qkv, q, hidden * hidden * sizeof(float));
-        memcpy(qkv + hidden * hidden, k, hidden * hidden * sizeof(float));
-        memcpy(qkv + 2 * hidden * hidden, v, hidden * hidden * sizeof(float));
-    }
-
-    free(q); free(k); free(v);
-    return qkv;
 }
 
 flux_transformer_t *flux_transformer_load_safetensors(safetensors_file_t *sf) {

@@ -66,18 +66,6 @@ static safetensor_dtype_t parse_dtype(const char *s) {
     return DTYPE_UNKNOWN;
 }
 
-static size_t dtype_size(safetensor_dtype_t dtype) {
-    switch (dtype) {
-        case DTYPE_F32: return 4;
-        case DTYPE_F16: return 2;
-        case DTYPE_BF16: return 2;
-        case DTYPE_I32: return 4;
-        case DTYPE_I64: return 8;
-        case DTYPE_BOOL: return 1;
-        default: return 0;
-    }
-}
-
 /* Parse a tensor entry from JSON */
 static int parse_tensor_entry(const char **p, safetensor_t *t) {
     skip_whitespace(p);
