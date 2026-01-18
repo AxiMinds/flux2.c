@@ -106,6 +106,13 @@ flux_ctx *flux_load_dir(const char *model_dir);
 void flux_free(flux_ctx *ctx);
 
 /*
+ * Release the text encoder to free ~8GB of memory.
+ * Call this after encoding if you don't need to encode more prompts.
+ * The encoder will be reloaded automatically if needed for a new prompt.
+ */
+void flux_release_text_encoder(flux_ctx *ctx);
+
+/*
  * Text-to-image generation.
  * Returns newly allocated image, caller must free with flux_image_free().
  * Returns NULL on error.

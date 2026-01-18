@@ -82,6 +82,7 @@ struct flux_ctx {
     /* Model info */
     char model_name[64];
     char model_version[32];
+    char model_dir[512];  /* For reloading text encoder if released */
 
     /* State */
     int verbose;
@@ -124,6 +125,7 @@ flux_ctx *flux_load_dir(const char *model_dir) {
     ctx->default_guidance = 1.0f;
     strncpy(ctx->model_name, "FLUX.2-klein-4B", sizeof(ctx->model_name) - 1);
     strncpy(ctx->model_version, "1.0", sizeof(ctx->model_version) - 1);
+    strncpy(ctx->model_dir, model_dir, sizeof(ctx->model_dir) - 1);
 
     /* Load VAE */
     snprintf(path, sizeof(path), "%s/vae/diffusion_pytorch_model.safetensors", model_dir);
@@ -206,6 +208,14 @@ void flux_free(flux_ctx *ctx) {
     free(ctx);
 }
 
+void flux_release_text_encoder(flux_ctx *ctx) {
+    if (!ctx || !ctx->qwen3_encoder) return;
+
+    qwen3_encoder_free(ctx->qwen3_encoder);
+    ctx->qwen3_encoder = NULL;
+    fprintf(stderr, "Text encoder released (~8GB freed)\n");
+}
+
 /* Get transformer for debugging */
 void *flux_get_transformer(flux_ctx *ctx) {
     return ctx ? ctx->transformer : NULL;
@@ -221,8 +231,17 @@ float *flux_encode_text(flux_ctx *ctx, const char *prompt, int *out_seq_len) {
         return NULL;
     }
 
+    /* Reload encoder if it was released */
+    if (!ctx->qwen3_encoder && ctx->model_dir[0]) {
+        fprintf(stderr, "Reloading text encoder...\n");
+        ctx->qwen3_encoder = qwen3_encoder_load(ctx->model_dir);
+        if (!ctx->qwen3_encoder) {
+            fprintf(stderr, "Warning: Failed to reload text encoder\n");
+        }
+    }
+
     if (!ctx->qwen3_encoder) {
-        /* Return zero embeddings if encoder not loaded */
+        /* Return zero embeddings if encoder not available */
         *out_seq_len = QWEN3_MAX_SEQ_LEN;
         return (float *)calloc(QWEN3_MAX_SEQ_LEN * QWEN3_TEXT_DIM, sizeof(float));
     }
@@ -278,6 +297,9 @@ flux_image *flux_generate(flux_ctx *ctx, const char *prompt,
         set_error("Failed to encode prompt");
         return NULL;
     }
+
+    /* Release text encoder to free ~8GB before diffusion */
+    flux_release_text_encoder(ctx);
 
     /* Compute latent dimensions */
     int latent_h = p.height / 16;
@@ -575,6 +597,9 @@ flux_image *flux_img2img(flux_ctx *ctx, const char *prompt,
         set_error("Failed to encode prompt");
         return NULL;
     }
+
+    /* Release text encoder to free ~8GB before diffusion */
+    flux_release_text_encoder(ctx);
 
     /* Encode image to latent */
     float *img_tensor = flux_image_to_tensor(img_to_use);
