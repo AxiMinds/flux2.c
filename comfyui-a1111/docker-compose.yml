@@ -1,0 +1,86 @@
+services:
+  # ComfyUI on GPU 0 - PyTorch nightly with CUDA 13.0 for Blackwell
+  comfyui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: comfyui
+    image: comfyui:latest
+    ports:
+      - "0.0.0.0:9101:9101"
+    volumes:
+      # Mount model directories directly to ComfyUI paths (no double-nesting)
+      - ./models/checkpoints:/app/comfyui/models/checkpoints
+      - ./models/vae:/app/comfyui/models/vae
+      - ./models/loras:/app/comfyui/models/loras
+      - ./models/clip:/app/comfyui/models/clip
+      - ./models/unet:/app/comfyui/models/unet
+      - ./models/controlnet:/app/comfyui/models/controlnet
+      - ./models/diffusion_models:/app/comfyui/models/diffusion_models
+      - ./models/text_encoders:/app/comfyui/models/text_encoders
+      - ./models/upscale_models:/app/comfyui/models/upscale_models
+      # Outputs and custom nodes
+      - ./outputs/comfyui:/app/outputs/comfyui
+      - ./custom_nodes:/app/comfyui/custom_nodes
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0", "1"]
+              capabilities: [gpu]
+    command: >
+      bash -c "cd /app/comfyui && python3 main.py --listen 0.0.0.0 --port 9101 --output-directory /app/outputs/comfyui"
+    restart: unless-stopped
+    shm_size: "4gb"
+
+  # Forge on GPU 1 - PyTorch nightly with CUDA 13.0 for Blackwell
+  # Replaces A1111 which has Blackwell compatibility issues
+  forge:
+    build:
+      context: .
+      dockerfile: Dockerfile.forge
+    container_name: forge
+    image: forge:latest
+    ports:
+      - "0.0.0.0:9102:9102"
+    volumes:
+      # Forge uses A1111-style paths - map shared models appropriately
+      - ./models/checkpoints:/app/forge/models/Stable-diffusion
+      - ./models/vae:/app/forge/models/VAE
+      - ./models/loras:/app/forge/models/Lora
+      - ./models/clip:/app/forge/models/CLIP
+      - ./models/unet:/app/forge/models/unet
+      - ./models/controlnet:/app/forge/models/ControlNet
+      - ./models/diffusion_models:/app/forge/models/diffusion_models
+      - ./models/text_encoders:/app/forge/models/text_encoder
+      # Outputs and extensions
+      - ./outputs/forge:/app/outputs/forge
+      - ./extensions:/app/forge/extensions
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0", "1"]
+              capabilities: [gpu]
+    command: >
+      bash -c "cd /app/forge && python3 launch.py --listen --port 9102 --api --skip-torch-cuda-test --skip-version-check --skip-install --cuda-malloc"
+    restart: unless-stopped
+    shm_size: "4gb"
+
+  # ImageGen Gallery - web UI for browsing generated images
+  gallery:
+    image: python:3.12-slim
+    container_name: imagegen-gallery
+    ports:
+      - "0.0.0.0:9201:9201"
+    volumes:
+      - /home/jdare/AI/development/AxiMinds-Imagegen-Agents-Skills/gallery:/app
+      - ./outputs:/app/outputs:ro
+    command: python3 /app/server.py
+    restart: unless-stopped
