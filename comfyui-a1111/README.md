@@ -40,6 +40,8 @@ The gallery includes a full image editor accessible by clicking any image → "O
 - Character preservation for consistent likeness
 - SSE-streamed progress
 
+**Interactive Demo** — Click "Demo" button for a guided 3-phase walkthrough (txt2img → img2img → AI mode → upscale) using real API calls with typewriter animations and narrated explanations.
+
 ## Models
 
 ```
