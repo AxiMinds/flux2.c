@@ -81,6 +81,32 @@ services:
       - "0.0.0.0:9201:9201"
     volumes:
       - /home/jdare/AI/development/AxiMinds-Imagegen-Agents-Skills/gallery:/app
-      - ./outputs:/app/outputs:ro
+      - /home/jdare/AI/development/AxiMinds-Imagegen-Agents-Skills/bin:/app/imagegen-bin:ro
+      - /home/jdare/AI/development/AxiMinds-Imagegen-Agents-Skills/lib:/app/imagegen-lib:ro
+      - /home/jdare/AI/development/AxiMinds-Imagegen-Agents-Skills/templates:/app/imagegen-templates:ro
+      - /home/jdare/AI/development/AxiMinds-Imagegen-Agents-Skills/config:/app/imagegen-config:ro
+      - ./outputs:/app/outputs
+      - ./:/app/legacy:ro
+      - /home/jdare/AI/development/AxiMinds-Imagegen-Agents-Skills/gallery/data:/app/data
+    environment:
+      - GALLERY_EXTRA_DIRS=/app/legacy
+      - OLLAMA_URL=http://172.30.200.200:11434
+      - OLLAMA_MODEL=qwen3-coder:30b
+      - IMAGEGEN_BIN=/app/imagegen-bin/imagegen
+      - IMAGEGEN_MODELS_DIR=/app/outputs/../models
+      - PYTHONPATH=/app/imagegen-lib
+      - GALLERY_DATA_DIR=/app/data
+      - MONOLOGUE_MODELS=qwen3-coder:30b
+      - MONOLOGUE_INTERVAL=90
+      - EMOTION_MODEL=qwen3:0.6b
+      - EMOTION_INTERVAL=15
+      - CONSCIOUSNESS_MODELS=qwen3-coder:30b
+      - PROMPT_REFACTOR_MODEL=qwen3:32b
+      - SAFETY_REVIEWER_1=qwen3:0.6b
+      - SAFETY_REVIEWER_2=qwen3:32b
+      - SAFETY_REVIEWER_3=qwen3-coder:30b
+      - DEFAULT_CHANNELS=#general,#imagegen,#consciousness
+      - EDITOR_AI_MODEL=qwen3:32b
+      - EDITOR_QUALITY_MODEL=qwen3:8b
     command: python3 /app/server.py
     restart: unless-stopped
